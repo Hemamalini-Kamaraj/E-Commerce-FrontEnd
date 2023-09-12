@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const url = "http://localhost:3001/";
+const url = "https://e-commerce-5i4j.onrender.com/";
 
 let userUrl = axios.create({
   baseURL: url,
