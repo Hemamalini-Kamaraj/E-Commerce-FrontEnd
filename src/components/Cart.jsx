@@ -1,11 +1,12 @@
 import React, {  useState, useEffect } from 'react'
 import { useDispatch, useSelector } from "react-redux";
-import { addToCartRedux, removeFromCartRedux } from "../redux/reducers/cartReducer";
+import { addToCartRedux, removeFromCartRedux, clearCartRedux } from "../redux/reducers/cartReducer";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import { useNavigate } from "react-router-dom";
 import userUrl from '../api/api';
-
+import useRazorpay from "react-razorpay";
+import { CurrencyRupee } from 'react-bootstrap-icons';
 
 const Cart = ({ selectedCategory, setSelectedCategory }) => {
 
@@ -22,8 +23,9 @@ const Cart = ({ selectedCategory, setSelectedCategory }) => {
     
     if (jsonData) {
         var token = jsonData["token"];
-        var userName = jsonData["name"];
     }
+
+    const [Razorpay] = useRazorpay();
 
     const config = {
         headers : { authorization : `bearer ${token}`}
@@ -48,6 +50,7 @@ const Cart = ({ selectedCategory, setSelectedCategory }) => {
 
     const navigate = useNavigate();
     const cartItems = useSelector((state) => state.cart);
+    const dispatch = useDispatch();
 
     let productAmount = [];
 
@@ -63,18 +66,44 @@ const Cart = ({ selectedCategory, setSelectedCategory }) => {
     
     const shipping = (sumTotalItems <= 250) ? 0 : 20;
     
-    const handleCheckout = () => {
+    const handleCheckout =  (values) => {
         let jsonData = JSON.parse(sessionStorage.getItem("loggedInUser"));
         if (jsonData) {
-            alert("Order confirmed.We will deliver your order within 5 days");
-            window.location.reload();
-            // navigate("/");
+            const options = {
+                key: import.meta.env.VITE_RAZAR_KEY,
+                key_secret: import.meta.env.VITE_RAZAR_SECRET,
+                amount: values * 100,
+                currency: "INR",
+                name: "E-Comm Corp",
+                description: "Test Transaction",
+                image:
+                    "https://clipart-library.com/image_gallery2/Superman-Logo-Free-Download-PNG.png",
+                handler: (res) => {
+                    alert(`Payment Success, Payment ID:${res.razorpay_payment_id}. We will send tracking details soon`);
+                    dispatch(clearCartRedux());
+                    navigate("/")
+                },
+                prefill: {
+                    name: jsonData["name"],
+                    email: jsonData["email"],
+                    contact: "1234456",
+                },
+                notes: {
+                    address: "Razorpay Corporate Office",
+                },
+                theme: {
+                    color: "#f5b48e",
+                },
+                };
+                const rzpay = new Razorpay(options);
+
+                rzpay.open();
         } else {
             alert("Kindly login to confirm your order")
             navigate("/signin")
         }
-    }
-
+    }   
+    
     return (
     <>
         <Navbar selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
@@ -113,23 +142,23 @@ const Cart = ({ selectedCategory, setSelectedCategory }) => {
                                     </p>
                                     <p className="d-flex justify-content-between">
                                         <span>Subtotal</span>
-                                        <span>${sumTotalItems}</span>
+                                        <span><CurrencyRupee />{sumTotalItems}</span>
                                     </p>
                                     <p className="d-flex justify-content-between">
                                         <span>Shipping</span>
-                                        <span>${shipping}</span>
+                                        <span><CurrencyRupee />{shipping}</span>
                                     </p>
                                     <p className="d-flex justify-content-between">
                                         <span>Total(Incl. taxes)</span>
                                         <span>
-                                            ${totalItemLength === 0 ? "0" : sumTotalItems + shipping }
+                                            <CurrencyRupee />{totalItemLength === 0 ? "0" : sumTotalItems + shipping }
                                         </span>
                                     </p>
                                 </div>
                                 {
                                 totalItemLength === 0 ? "" : 
                                 <div className="card-footer text-center">
-                                    <button className="btn fs-5 btn-dark fw-bold" onClick={handleCheckout}>Proceed to Checkout</button>
+                                    <button className="btn fs-5 btn-dark fw-bold" onClick={() => handleCheckout(sumTotalItems+shipping)}>Proceed to Checkout</button>
                                 </div>     
                                 }
                                 </div>
@@ -209,7 +238,7 @@ function CartItem({ cartItem }) {
             </div>
             <div className="col-sm-9">
                 <h5 className="card-text">{cartItem.title}</h5>
-                <h6 className="fw-bold">$ {cartItem.price}</h6>
+                <h6 className="fw-bold"><CurrencyRupee /> {cartItem.price}</h6>
                 <div className="add-to-cart-container">
                     <div className="addCart" onClick={handleRemoveFromCart}>
                     -

@@ -1,3 +1,4 @@
+import { CurrencyRupee } from 'react-bootstrap-icons';
 import AddToCart from './AddToCart';
 
 function ProductCard({product}) {
@@ -9,7 +10,7 @@ function ProductCard({product}) {
                 <h5 className="card-title">{product.title}</h5>   
             </div>
             <div className='card-footer product-body'>
-                <h3 style={{ marginTop: 10, color:"darkviolet" }}>${product.price}</h3>
+                <h3 style={{ marginTop: 10, color:"darkviolet" }}><CurrencyRupee />{product.price}</h3>
                 <AddToCart product={product}/>
             </div>
         </div>
